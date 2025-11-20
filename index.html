@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>محرك بحث صور احترافي بالعربي - Pixabay</title>
+<style>
+  /* Reset بسيط */
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background: #121212;
+    color: #eee;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 2.2rem;
+    letter-spacing: 0.04em;
+    color: #1abc9c;
+  }
+
+  form {
+    width: 100%;
+    max-width: 450px;
+    display: flex;
+    margin-bottom: 30px;
+    box-shadow: 0 0 10px rgba(26,188,156,0.3);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    padding: 15px 20px;
+    font-size: 1.15rem;
+    border: none;
+    outline: none;
+    background: #222;
+    color: #eee;
+    transition: background-color 0.3s ease;
+  }
+  input[type="text"]:focus {
+    background: #333;
+  }
+
+  button {
+    padding: 0 30px;
+    background: #1abc9c;
+    border: none;
+    cursor: pointer;
+    color: white;
+    font-weight: 700;
+    font-size: 1.15rem;
+    transition: background-color 0.3s ease;
+    border-radius: 0;
+  }
+  button:hover, button:focus {
+    background: #16a085;
+  }
+
+  #results {
+    width: 100%;
+    max-width: 1100px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+    gap: 20px;
+  }
+
+  .photo {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(0, 255, 200, 0.2);
+    cursor: pointer;
+    background: #222;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .photo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px #1abc9c;
+  }
+  .photo img {
+    width: 100%;
+    height: auto;
+    display: block;
+    filter: brightness(0.95);
+    transition: filter 0.3s ease;
+  }
+  .photo:hover img {
+    filter: brightness(1);
+  }
+
+  /* Loading spinner */
+  #loading {
+    display: none;
+    margin: 30px auto;
+    border: 6px solid #eee;
+    border-top: 6px solid #1abc9c;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+  }
+
+  /* رسالة الخطأ */
+  #message {
+    margin-top: 30px;
+    font-size: 1.3rem;
+    color: #e74c3c;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 480px) {
+    form {
+      max-width: 100%;
+      flex-direction: column;
+    }
+    input[type="text"] {
+      border-radius: 10px 10px 0 0;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    button {
+      border-radius: 0 0 10px 10px;
+      width: 100%;
+      padding: 12px 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>ابحث عن الصور بالعربي والإنجليزي</h1>
+
+<form id="searchForm" aria-label="نموذج البحث عن الصور">
+  <input type="text" id="searchInput" placeholder="اكتب كلمة البحث هنا" required aria-required="true" aria-label="حقل البحث" />
+  <button type="submit" aria-label="زر البحث">بحث</button>
+</form>
+
+<div id="loading" role="status" aria-live="polite" aria-hidden="true"></div>
+
+<div id="results" aria-live="polite" aria-relevant="additions"></div>
+<div id="message" role="alert"></div>
+
+<footer style="margin-top: 40px; text-align: center; color: #1abc9c; font-weight: bold; font-size: 1.1rem; user-select:none;">
+  for randa
+</footer>
+
+<script>
+  const API_KEY = '53339971-19c6fcb31c9dbf2c5c9e2ca6b'; // مفتاحك هنا
+  const form = document.getElementById('searchForm');
+  const input = document.getElementById('searchInput');
+  const resultsDiv = document.getElementById('results');
+  const loading = document.getElementById('loading');
+  const message = document.getElementById('message');
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const query = input.value.trim();
+    if (!query) return;
+
+    message.textContent = '';
+    resultsDiv.innerHTML = '';
+    loading.style.display = 'block';
+    loading.setAttribute('aria-hidden', 'false');
+
+    fetch(`https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=30&lang=ar`)
+      .then(res => res.json())
+      .then(data => {
+        loading.style.display = 'none';
+        loading.setAttribute('aria-hidden', 'true');
+
+        if(data.hits && data.hits.length > 0) {
+          resultsDiv.innerHTML = '';
+          data.hits.forEach(photo => {
+            const photoDiv = document.createElement('div');
+            photoDiv.className = 'photo';
+            photoDiv.innerHTML = `
+              <a href="${photo.largeImageURL}" target="_blank" rel="noopener noreferrer" aria-label="صورة: ${photo.tags}">
+                <img src="${photo.webformatURL}" alt="${photo.tags}" title="${photo.tags}" loading="lazy" />
+              </a>
+            `;
+            resultsDiv.appendChild(photoDiv);
+          });
+        } else {
+          message.textContent = 'لا توجد نتائج بحث.';
+        }
+      })
+      .catch(err => {
+        loading.style.display = 'none';
+        loading.setAttribute('aria-hidden', 'true');
+        message.textContent = 'حدث خطأ أثناء البحث، حاول مرة أخرى.';
+        console.error(err);
+      });
+  });
+</script>
+
+</body>
+</html>
